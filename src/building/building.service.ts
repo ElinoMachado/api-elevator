@@ -97,13 +97,18 @@ export class BuildingService {
     };
   }
   private generateMockBuildings(count: number): CreateBuildingDto[] {
-    const statuses = ['High Profitability', 'Moderate', 'critical', 'warning'];
+    const statuses = [
+      'High Profitability',
+      'Moderate',
+      'critical',
+      'defective',
+    ];
 
     const statusColorMap: Record<string, string> = {
       'High Profitability': '#7FBE8B',
       Moderate: '#D9D9D9',
       critical: '#ED7171',
-      warning: '#D9BD6F',
+      defective: '#D9BD6F',
     };
 
     return Array.from({ length: count }, (_, i) => {
