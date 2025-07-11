@@ -35,7 +35,7 @@ export class BuildingController {
     @Param('id') id: string,
     @Body() updateBuildingDto: UpdateBuildingDto,
   ) {
-    console.log('entrou controlador');
+    console.log(updateBuildingDto.elevators);
     return this.buildingService.update(id, updateBuildingDto);
   }
 

@@ -2,13 +2,24 @@ import { Injectable } from '@nestjs/common';
 import { CreateBuildingDto } from './dto/create-building.dto';
 import { UpdateBuildingDto } from './dto/update-building.dto';
 import { BuildingsSummary } from './dto/buildings-summary.dto';
+import { generateId } from 'src/utils/idGen';
 
 @Injectable()
 export class BuildingService {
+  statuses = ['High Profitability', 'Moderate', 'critical', 'defective'];
+  statusColorMap: Record<string, string> = {
+    'High Profitability': '#7FBE8B',
+    Moderate: '#D9D9D9',
+    critical: '#ED7171',
+    defective: '#D9BD6F',
+  };
   buildingsDataBase: CreateBuildingDto[] = this.generateMockBuildings(30);
 
   create(createBuildingDto: CreateBuildingDto) {
-    this.buildingsDataBase.push(createBuildingDto);
+    if (!createBuildingDto.id) {
+      createBuildingDto.id = generateId();
+    }
+    this.buildingsDataBase.unshift(createBuildingDto);
     return createBuildingDto;
   }
 
@@ -57,8 +68,12 @@ export class BuildingService {
       let totalProfit = 0;
 
       const normalizedElevators = building.elevators.map((elevator) => {
-        const monthlyProfit = elevator.monthlyProfit ?? 0;
-        const annualProfit = monthlyProfit * 12;
+        if (!elevator.id) {
+          elevator.id = generateId();
+        }
+
+        const annualProfit = elevator.saleValue - elevator.totalExpenses;
+        const monthlyProfit = annualProfit / 12;
         const totalProfitElevator =
           (elevator.saleValue ?? 0) - (elevator.totalExpenses ?? 0);
 
@@ -77,9 +92,12 @@ export class BuildingService {
       globalMonthlyProfit += totalMonthlyProfit;
       globalAnnualProfit += totalAnnualProfit;
       globalTotalProfit += totalProfit;
+      const status = this.statusBuilding(totalProfit);
 
       return {
         ...building,
+        status: status,
+        color: this.statusColorMap[status],
         elevators: normalizedElevators,
         monthlyProfit: totalMonthlyProfit,
         annualProfit: totalAnnualProfit,
@@ -96,24 +114,17 @@ export class BuildingService {
       },
     };
   }
+  statusBuilding(totalProfit: number): string {
+    return totalProfit === 0
+      ? 'Moderate'
+      : totalProfit > 0
+        ? 'High Profitability'
+        : 'critical';
+  }
   private generateMockBuildings(count: number): CreateBuildingDto[] {
-    const statuses = [
-      'High Profitability',
-      'Moderate',
-      'critical',
-      'defective',
-    ];
-
-    const statusColorMap: Record<string, string> = {
-      'High Profitability': '#7FBE8B',
-      Moderate: '#D9D9D9',
-      critical: '#ED7171',
-      defective: '#D9BD6F',
-    };
-
     return Array.from({ length: count }, (_, i) => {
-      const status = statuses[i % statuses.length];
       const profitBase = 1000 * (i + 1);
+      const status = this.statusBuilding(profitBase * 12);
 
       return {
         id: `bld-${i + 1}`,
@@ -121,8 +132,8 @@ export class BuildingService {
         address: `Street ${i + 1}, Number ${100 + i}`,
         residents: Math.floor(Math.random() * 200) + 10,
         maintenanceCount: Math.floor(Math.random() * 10),
-        status,
         totalProfit: profitBase * 12,
+        status,
         annualProfit: profitBase,
         monthlyProfit: Math.round(profitBase / 12),
         elevators: Array.from(
@@ -146,7 +157,7 @@ export class BuildingService {
             monthlyProfit: 400 + j * 40,
           }),
         ),
-        color: statusColorMap[status],
+        color: this.statusColorMap[status],
       };
     });
   }
